@@ -79,6 +79,34 @@ class OrderCancelledRefundListenerTest {
     }
 
     @Test
+    void orderServicePayloadWithProducerOnlyFieldsIsAccepted() {
+        // Shape published by order-service (schema v2), captured from the local E2E stack.
+        String published = """
+                {"schemaVersion":2,"eventId":"2b7e3c4a-7d31-4577-9454-3640906437ae","eventType":"ORDER_CANCELLED",
+                 "occurredAt":"2026-10-25T07:08:39.834758087","orderId":15,"userId":32,"userPrincipalId":32,
+                 "restaurantId":7,"previousStatus":"PENDING","currentStatus":"CANCELLED","cancelReason":"e2e",
+                 "cancelledBy":32,"cancelledBySource":"CUSTOMER","cancelReasonCode":"CUSTOMER_CANCELLED",
+                 "cancelledAt":[2026,10,25,7,8,39,834005337],"shipperId":null,"hasActiveDelivery":false,
+                 "voucherReservationId":null,"promotionReservationId":null,"flashSaleReservationId":null,
+                 "inventoryReservationId":"9392e6e2-0177-4cd8-bc21-609dd1805dbd","subtotalPrice":45000.0,
+                 "discountAmount":0,"shippingFee":12000.0,"totalPrice":57000.0,"itemDiscount":0,"shippingDiscount":0,
+                 "customerShippingFee":12000.0,"grossShippingFee":12000.0,"platformSubsidy":0,"shopDiscount":0,
+                 "paymentMethod":"COD","items":[{"orderItemId":15,"menuItemId":7,"quantity":1,"unitPrice":45000.0}],
+                 "appliedVouchers":[],"createdAt":[2026,10,25,7,8,39,771369000],"updatedAt":[2026,10,25,7,8,39,834005337]}
+                """;
+
+        listener().handleOrderCancelled(published, "order.cancelled", 0, 1L, acknowledgment);
+
+        var captured = org.mockito.ArgumentCaptor.forClass(OrderCancelledEvent.class);
+        verify(refundCaseService).processOrderCancellation(captured.capture());
+        assertThat(captured.getValue().getOrderId()).isEqualTo(15L);
+        assertThat(captured.getValue().getPaymentMethod()).isEqualTo("COD");
+        assertThat(captured.getValue().getPreviousStatus()).isEqualTo("PENDING");
+        assertThat(captured.getValue().getTotalPrice()).isEqualByComparingTo("57000");
+        verify(acknowledgment).acknowledge();
+    }
+
+    @Test
     void malformedJsonIsNotAcknowledgedOrForwarded() {
         OrderCancelledRefundListener listener = new OrderCancelledRefundListener(refundCaseService);
 
