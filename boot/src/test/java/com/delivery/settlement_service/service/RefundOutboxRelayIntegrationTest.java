@@ -1,5 +1,6 @@
 package com.delivery.settlement_service.service;
 
+import java.time.temporal.ChronoUnit;
 import com.delivery.settlement_service.entity.RefundOutboxEvent;
 import com.delivery.settlement_service.repository.RefundOutboxEventRepository;
 import java.time.LocalDateTime;
@@ -18,6 +19,7 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.within;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -97,7 +99,7 @@ class RefundOutboxRelayIntegrationTest {
         RefundOutboxEvent deadAfter = events.findById(dead.getEventId()).orElseThrow();
         assertThat(deadAfter.getStatus()).isEqualTo(RefundOutboxEvent.Status.DEAD);
         assertThat(deadAfter.getAttempts()).isEqualTo(12);
-        assertThat(deadAfter.getNextAttemptAt()).isEqualTo(dead.getNextAttemptAt());
+        assertThat(deadAfter.getNextAttemptAt()).isCloseTo(dead.getNextAttemptAt(), within(1, ChronoUnit.MICROS)); // DB keeps micros
         assertThat(deadAfter.getLastError()).hasSize(2000);
         assertThat(events.findById(success.getEventId()).orElseThrow().getStatus())
                 .isEqualTo(RefundOutboxEvent.Status.SENT);

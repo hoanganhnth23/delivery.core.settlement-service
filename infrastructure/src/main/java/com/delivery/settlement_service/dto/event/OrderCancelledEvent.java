@@ -1,5 +1,6 @@
 package com.delivery.settlement_service.dto.event;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -11,7 +12,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-/** Canonical cancellation snapshot consumed by the refund boundary. */
+/**
+ * Canonical cancellation snapshot consumed by the refund boundary. Producer-only
+ * fields (schemaVersion, inventory/voucher details, ...) are ignored: the refund
+ * decision reads only the fields below, and a strict reader dead-lettered every
+ * real order.cancelled event.
+ */
+@JsonIgnoreProperties(ignoreUnknown = true)
 @Data
 @Builder
 @NoArgsConstructor
