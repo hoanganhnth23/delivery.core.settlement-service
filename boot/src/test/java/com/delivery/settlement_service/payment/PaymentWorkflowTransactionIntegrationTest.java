@@ -1,5 +1,6 @@
 package com.delivery.settlement_service.payment;
 
+import java.time.temporal.ChronoUnit;
 import com.delivery.settlement.application.api.*;
 import com.delivery.settlement_service.entity.*;
 import com.delivery.settlement_service.payment.dto.*;
@@ -63,7 +64,7 @@ class PaymentWorkflowTransactionIntegrationTest {
         callbackResult(created.paymentReference(), true, 10000L);
         var success = workflow.callback("VNPAY", Map.of());
         assertThat(success.status()).isEqualTo("SUCCESS");
-        assertThat(success.createdAt()).isEqualTo(created.createdAt());
+        assertThat(success.createdAt()).isCloseTo(created.createdAt(), within(1, ChronoUnit.MICROS)); // DB keeps micros
         assertThat(transactions.count()).isZero(); assertThat(balances.count()).isZero();
         workflow.callback("VNPAY", Map.of());
         verify(events, times(1)).publishPaymentSuccess(any());
